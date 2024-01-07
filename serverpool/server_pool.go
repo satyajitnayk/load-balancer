@@ -63,27 +63,43 @@ func (s *roundRobinServerPool) AddBackend(b backend.Backend) {
 // every backend in the server pool
 func HealthCheck(ctx context.Context, s ServerPool) {
 	aliveChannel := make(chan bool, 1)
+
+	// Iterate over the backends in the server pool
 	for _, b := range s.GetBackends() {
 		b := b
 
 		// Defining a context with timeout
+		// It limit the execution time of the health check for each backend.
+		// This ensures that the health check does not block indefinitely.
 		requesContext, stop := context.WithTimeout(ctx, 10*time.Second)
+
+		// ensures that the context (requestContext) is canceled and resources
+		// associated with it are cleaned up when the function exits, regardless of how it exits.
 		defer stop()
 
 		status := "up"
+
+		// Perform a health check on the backend concurrently
+		// The context is passed to the backend.IsBackendAlive function, allowing for proper cancellation propagation.
 		go backend.IsBackendAlive(requesContext, aliveChannel, b.GetURL())
 
+		// Wait for the health check result
+		// The select statement is used to wait for either the overall context (ctx.Done())
+		// to be canceled or the result of the health check (alive) to be received on the aliveChannel.
 		select {
 		case <-ctx.Done():
+			// If the overall context is canceled, log and exit
 			utils.Logger.Info("Gracefully shutting down health check")
 			return
 		case alive := <-aliveChannel:
+			// Update the backend's alive status based on the health check result
 			b.SetAlive(alive)
 			if !alive {
 				status = "down"
 			}
 		}
 
+		// Log the result of the health check
 		utils.Logger.Debug(
 			"URL status",
 			zap.String("URl", b.GetURL().String()),

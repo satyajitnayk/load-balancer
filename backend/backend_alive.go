@@ -20,6 +20,9 @@ func IsBackendAlive(ctx context.Context, aliveChannel chan bool, u *url.URL) {
 		aliveChannel <- false
 		return
 	}
+	// Close the connection (cleanup)
 	_ = conn.Close()
+
+	// If the connection is successfully established and closed, signal that the site is reachable
 	aliveChannel <- true
 }
