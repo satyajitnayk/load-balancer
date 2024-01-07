@@ -6,6 +6,19 @@ import (
 	"github.com/satyajitnayk/load-balancer/serverpool"
 )
 
+const (
+	RETRY_ATTEMPTED int = 0
+)
+
+// whether a retry attempt is allowed for an HTTP request based on the presence of a
+// boolean value associated with the constant RETRY_ATTEMPTED in the request's context.
+func AllowRetry(r *http.Request) bool {
+	if _, ok := r.Context().Value(RETRY_ATTEMPTED).(bool); ok {
+		return false
+	}
+	return true
+}
+
 type LoadBalancer interface {
 	Serve(http.ResponseWriter, *http.Request)
 }
