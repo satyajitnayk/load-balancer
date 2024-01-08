@@ -88,7 +88,8 @@ func main() {
 				w,
 				r.WithContext(
 					context.WithValue(r.Context(), frontend.RETRY_ATTEMPTED, true),
-				))
+				),
+			)
 		}
 		serverPool.AddBackend(backendServer)
 	}
